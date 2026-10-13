@@ -1,0 +1,29 @@
+# Looking Glass Agent 节点独立部署（仅需本目录）
+#
+# 使用：
+#   1. 在 Web 控制台添加节点，获取节点令牌（lgn_ 开头）
+#   2. cp .env.example .env，填写 SERVER_URL 与 NODE_TOKEN
+#   3. docker compose pull && docker compose up -d   # 或 bash update.sh
+#
+# 不使用 compose 的等效方式：
+#   docker build -t lookingglass-agent:latest .
+#   docker run -d --network host --name lg-agent --restart unless-stopped \
+#     -e SERVER_URL=ws://<服务端地址>/ws/agent \
+#     -e NODE_TOKEN=<节点令牌> \
+#     lookingglass-agent:latest
+
+services:
+  agent:
+    image: ghcr.io/lcsoul/lookingglass-agent:latest
+    container_name: lg-agent
+    restart: unless-stopped
+    # 使用宿主机网络：探测视角与宿主机完全一致，原生支持 IPv6。
+    # 注意：此时 SERVER_URL 中的 127.0.0.1 指宿主机本身。
+    # 如需改回桥接网络，注释掉下一行并为 Docker 守护进程启用 IPv6
+    #（/etc/docker/daemon.json 配置 fixed-cidr-v6 等），否则 v6 测试会报 "Network is unreachable"。
+    network_mode: host
+    environment:
+      SERVER_URL: ${SERVER_URL:-ws://localhost:8080/ws/agent}
+      NODE_TOKEN: ${NODE_TOKEN:-}
+      # MAX_SESSION_MS: 180000   # 单次测试最长执行时间（毫秒）
+      # MAX_CONCURRENT: 10         # 单节点最大并发测试数
